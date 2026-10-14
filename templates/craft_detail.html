@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ craft.name }} · CraftSetu AI{% endblock %}
+{% block content %}
+<section class="detail-hero section-shell"><a class="back-link" href="{{ url_for('explore') }}">← All crafts</a><div class="detail-layout"><div><span class="eyebrow">{{ craft.category }} · {{ craft.level }}</span><h1>{{ craft.name }}</h1><p class="detail-region">⌖ {{ craft.region }}</p><p class="detail-intro">{{ craft.history }}</p><a class="btn btn-primary" href="{{ url_for('learn', craft=craft.slug) }}">Start learning <span>↗</span></a></div><div class="detail-art illustration-{{ (crafts|selectattr('slug','equalto',craft.slug)|list|length) + 1 }}"><span class="detail-art-symbol">✿</span></div></div></section>
+<section class="detail-info section-shell"><article class="info-panel"><span class="panel-icon coral-bg">✦</span><h2>Materials and tools</h2><p>{{ craft.materials }}</p></article><article class="info-panel"><span class="panel-icon mint-bg">❋</span><h2>Cultural significance</h2><p>{{ craft.significance }}</p></article><article class="info-panel"><span class="panel-icon yellow-bg">♡</span><h2>Learn respectfully</h2><p>Every tradition has regional variations and living artisan communities. Treat this introduction as a starting point and learn from practitioners when possible.</p></article></section>
+{% endblock %}

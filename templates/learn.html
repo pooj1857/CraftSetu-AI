@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Continue Learning · CraftSetu AI{% endblock %}
+{% block head %}<script defer src="{{ url_for('static', filename='js/learning.js') }}"></script>{% endblock %}
+{% block content %}
+<section class="page-hero learn-heading section-shell"><span class="eyebrow">YOUR PERSONAL CRAFT JOURNEY</span><h1>Continue learning.</h1><p>Choose a craft, explore the basics, and ask CraftSetu AI when curiosity strikes.</p></section>
+<section class="learning-layout section-shell" id="learning-app" data-craft="{{ selected.slug }}">
+  <aside class="learning-sidebar">
+    <label for="craft-select">Choose a craft</label><select id="craft-select">{% for craft in crafts %}<option value="{{ craft.slug }}" {% if craft.slug == selected.slug %}selected{% endif %}>{{ craft.name }}</option>{% endfor %}</select>
+    <label for="language-select">Learning language</label><select id="language-select"><option {% if language == 'English' %}selected{% endif %}>English</option><option {% if language == 'Hindi' %}selected{% endif %}>Hindi</option><option {% if language == 'Gujarati' %}selected{% endif %}>Gujarati</option></select>
+    <div class="sidebar-craft"><span class="sidebar-star">✳</span><small>NOW EXPLORING</small><h3 id="sidebar-craft-name">{{ selected.name }}</h3><p id="sidebar-region">{{ selected.region }}</p></div>
+    <div class="progress-mini"><div class="progress-label"><span>Your progress</span><b id="progress-percent">{{ 100 if progress.completed else (progress.current_step * 25) }}</b><span>%</span></div><div class="progress-track"><span id="progress-bar" style="width:{{ 100 if progress.completed else (progress.current_step * 25) }}%"></span></div></div>
+    <a class="text-link" href="{{ url_for('my_learning') }}">View My Learning →</a>
+  </aside>
+  <div class="learning-main">
+    <div class="learning-welcome"><div><span class="eyebrow">START WITH THE STORY</span><h2 id="craft-title">{{ selected.name }}</h2><p id="craft-history">{{ selected.history }}</p></div><span class="welcome-stamp">✿</span></div>
+    <div class="lesson-tabs" role="tablist"><button class="lesson-tab active" data-step="0" role="tab">01 · History</button><button class="lesson-tab" data-step="1" role="tab">02 · Materials</button><button class="lesson-tab" data-step="2" role="tab">03 · First steps</button><button class="lesson-tab" data-step="3" role="tab">04 · Culture</button></div>
+    <article class="lesson-panel" id="lesson-panel"><span class="lesson-kicker">LESSON 01</span><h3>A tradition with a story</h3><p id="lesson-copy">{{ selected.history }}</p><div class="lesson-tip"><span>✦</span><p><b>Learning tip</b><br>Notice how place, materials and community shape each craft. Regional styles can differ, even within the same tradition.</p></div><div class="lesson-controls"><button class="btn btn-outline" id="previous-step" disabled>← Previous</button><button class="btn btn-primary" id="next-step">Mark step complete →</button></div></article>
+    <article class="ai-panel"><div class="ai-heading"><span class="ai-orb">✳</span><div><span class="eyebrow">GEMINI-POWERED LEARNING</span><h3>Ask CraftSetu AI</h3><p>Ask a question in your selected language. Answers are generated dynamically.</p></div></div><form id="ask-form"><label for="ai-question">What would you like to know?</label><textarea id="ai-question" maxlength="1500" required placeholder="e.g. How do beginners practise this craft safely?"></textarea><div class="ask-footer"><small>AI answers can make mistakes. Learn hazardous techniques only with trained artisan supervision.</small><button class="btn btn-primary" id="ask-button" type="submit">Ask AI <span>↗</span></button></div></form><div id="ai-response" class="ai-response hidden" aria-live="polite"></div></article>
+    <div class="notes-panel"><label for="learning-notes">Your notes (saved with progress)</label><textarea id="learning-notes" maxlength="2000" placeholder="Write down what you learned…">{{ progress.notes }}</textarea><button class="btn btn-outline" id="save-progress">Save my progress</button><span id="save-status" aria-live="polite"></span></div>
+  </div>
+</section>
+<script id="craft-data" type="application/json">{{ crafts|tojson }}</script>
+{% endblock %}

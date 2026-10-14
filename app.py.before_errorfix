@@ -1,0 +1,524 @@
+import os
+import json
+import re
+import sqlite3
+import uuid
+from datetime import datetime
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from dotenv import load_dotenv
+
+load_dotenv()
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-development-secret")
+DB_PATH = os.path.join(os.path.dirname(__file__), "database", "craftsetu.db")
+
+CRAFTS = [
+    {"slug":"madhubani","name":"Madhubani Painting","region":"Mithila, Bihar","category":"Painting","history":"A vibrant painting tradition associated with the Mithila region, traditionally created for ceremonies and important occasions.","materials":"Paper or cloth, natural or poster colours, brushes, cotton swabs and fine pens.","significance":"Its bold outlines and motifs often express nature, stories, rituals and community life.","level":"Beginner"},
+    {"slug":"blue-pottery","name":"Blue Pottery","region":"Jaipur, Rajasthan","category":"Pottery","history":"A distinctive glazed pottery tradition known for blue designs and a quartz-based body rather than ordinary clay alone.","materials":"Prepared pottery body, moulds, glaze and ceramic colours; use workshop guidance for firing.","significance":"Decorative floral and geometric patterns reflect a rich exchange of artistic traditions.","level":"Intermediate"},
+    {"slug":"bamboo-cane","name":"Bamboo and Cane Craft","region":"Across India, especially Northeast India","category":"Basketry","history":"Communities have used bamboo and cane for generations to make useful household objects, baskets, furniture and art.","materials":"Prepared bamboo or cane strips, cutter, measuring tape, water and protective gloves.","significance":"The craft connects local ecology, practical knowledge and community livelihoods.","level":"Beginner"},
+    {"slug":"dhokra","name":"Dhokra Metal Craft","region":"West Bengal, Odisha, Chhattisgarh and central India","category":"Metal craft","history":"A traditional non-ferrous metal casting method that uses the lost-wax process in several regional forms.","materials":"Wax, clay mould materials and metal are used by trained artisans in specialist workshops.","significance":"Figurines and motifs often depict animals, people and everyday or ceremonial life.","level":"Advanced"},
+    {"slug":"wood-carving","name":"Wood Carving","region":"Many regions of India","category":"Carving","history":"Artisans carve wood into architectural details, furniture, toys, utensils and decorative objects using region-specific styles.","materials":"Suitable wood, carving tools, pencil, workbench and safety equipment.","significance":"Patterns may reflect local architecture, nature, religious traditions and family lineages.","level":"Intermediate"},
+    {"slug":"stone-carving","name":"Stone Carving","region":"Rajasthan, Odisha, Tamil Nadu and other regions","category":"Carving","history":"Stone carving is visible in temples, monuments, sculpture and decorative objects across many Indian artistic traditions.","materials":"Appropriate stone, chisels, mallets, eye protection and dust protection under expert supervision.","significance":"The craft preserves architectural knowledge, symbolism and skilled handwork.","level":"Advanced"},
+    {"slug":"warli","name":"Warli Art","region":"Maharashtra, especially the Sahyadri region","category":"Painting","history":"Warli painting is a community art tradition known for simple geometric human and animal forms and scenes of daily life.","materials":"Paper, canvas, white paint, brush and a pencil for light guidelines.","significance":"Circular dances, farming, animals and community scenes express relationships between people and nature.","level":"Beginner"},
+    {"slug":"terracotta","name":"Terracotta Pottery","region":"Across India","category":"Pottery","history":"Terracotta uses shaped and fired clay to create pots, lamps, figurines, tiles and other objects.","materials":"Clay, water, shaping tools, a work surface and access to a suitable kiln for firing.","significance":"It links everyday life, local materials, ritual practices and long-standing pottery skills.","level":"Beginner"},
+]
+CRAFT_BY_SLUG = {c["slug"]: c for c in CRAFTS}
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+    # Safely migrate the older crafts table without deleting its data.
+    with get_db() as db:
+        table_exists = db.execute("""
+            SELECT name FROM sqlite_master
+            WHERE type = 'table' AND name = 'crafts'
+        """).fetchone()
+
+        if table_exists:
+            columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(crafts)").fetchall()
+            }
+
+            if "slug" not in columns:
+                db.execute("ALTER TABLE crafts ADD COLUMN slug TEXT")
+            if "significance" not in columns:
+                db.execute("ALTER TABLE crafts ADD COLUMN significance TEXT")
+            if "level" not in columns:
+                db.execute("ALTER TABLE crafts ADD COLUMN level TEXT")
+
+            known_crafts = {
+                craft["name"].casefold(): craft
+                for craft in CRAFTS
+            }
+
+            existing_crafts = db.execute(
+                "SELECT id, name, slug FROM crafts ORDER BY id"
+            ).fetchall()
+
+            used_slugs = set()
+
+            for row in existing_crafts:
+                craft = known_crafts.get(row["name"].casefold())
+
+                if craft:
+                    slug = craft["slug"]
+                else:
+                    slug = row["slug"] or f"legacy-{row['id']}"
+
+                if slug in used_slugs:
+                    slug = f"{slug}-{row['id']}"
+
+                used_slugs.add(slug)
+
+                if craft:
+                    db.execute("""
+                        UPDATE crafts
+                        SET slug = ?,
+                            significance = COALESCE(significance, ''),
+                            level = COALESCE(level, 'Beginner')
+                        WHERE id = ?
+                    """, (slug, row["id"]))
+                else:
+                    db.execute("""
+                        UPDATE crafts
+                        SET slug = ?,
+                            significance = COALESCE(
+                                significance, cultural_significance,
+                                description, ''
+                            ),
+                            level = COALESCE(level, 'Beginner')
+                        WHERE id = ?
+                    """, (slug, row["id"]))
+
+            db.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_crafts_slug
+                ON crafts(slug)
+            """)
+
+    with get_db() as db:
+
+        db.executescript("""
+        CREATE TABLE IF NOT EXISTS crafts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+            region TEXT NOT NULL, category TEXT NOT NULL, history TEXT NOT NULL, materials TEXT NOT NULL,
+            significance TEXT NOT NULL, level TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS learning_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, learner_name TEXT NOT NULL, craft_slug TEXT NOT NULL,
+            language TEXT NOT NULL DEFAULT 'English', current_step INTEGER NOT NULL DEFAULT 0,
+            completed INTEGER NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL, UNIQUE(learner_name, craft_slug),
+            FOREIGN KEY(craft_slug) REFERENCES crafts(slug)
+        );
+        CREATE TABLE IF NOT EXISTS quiz_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, craft_slug TEXT NOT NULL, difficulty TEXT NOT NULL,
+            question TEXT NOT NULL, options_json TEXT NOT NULL, answer_index INTEGER NOT NULL,
+            explanation TEXT NOT NULL, FOREIGN KEY(craft_slug) REFERENCES crafts(slug)
+        );
+        CREATE TABLE IF NOT EXISTS quiz_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, learner_name TEXT NOT NULL, craft_slug TEXT NOT NULL,
+            difficulty TEXT NOT NULL, score INTEGER NOT NULL, total INTEGER NOT NULL,
+            percentage REAL NOT NULL, answers_json TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS generated_quizzes (
+            quiz_id TEXT PRIMARY KEY, learner_name TEXT NOT NULL, craft_slug TEXT NOT NULL,
+            difficulty TEXT NOT NULL, language TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS generated_quiz_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, quiz_id TEXT NOT NULL,
+            question_number INTEGER NOT NULL, question TEXT NOT NULL,
+            options_json TEXT NOT NULL, answer_index INTEGER NOT NULL,
+            explanation TEXT NOT NULL,
+            FOREIGN KEY(quiz_id) REFERENCES generated_quizzes(quiz_id) ON DELETE CASCADE,
+            UNIQUE(quiz_id, question_number)
+        );
+        CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, learner_name TEXT NOT NULL, badge_key TEXT NOT NULL,
+            title TEXT NOT NULL, description TEXT NOT NULL, earned_at TEXT NOT NULL,
+            UNIQUE(learner_name, badge_key)
+        );
+        """)
+        for craft in CRAFTS:
+            db.execute("""INSERT INTO crafts(slug,name,region,category,history,materials,significance,level)
+            VALUES(:slug,:name,:region,:category,:history,:materials,:significance,:level)
+            ON CONFLICT(slug) DO UPDATE SET name=excluded.name, region=excluded.region, category=excluded.category,
+            history=excluded.history, materials=excluded.materials, significance=excluded.significance, level=excluded.level""", craft)
+        count = db.execute("SELECT COUNT(*) FROM quiz_questions").fetchone()[0]
+        if count == 0:
+            questions = [
+                ("madhubani","Beginner","Madhubani painting is associated with which region?",["Mithila","Kutch","Malabar","Konkan"],0,"Madhubani painting is strongly associated with the Mithila region of Bihar."),
+                ("blue-pottery","Beginner","Which colour is especially associated with Jaipur blue pottery?",["Blue","Neon green","Black only","Orange only"],0,"Blue designs are a well-known feature of Jaipur blue pottery."),
+                ("bamboo-cane","Beginner","Which material is central to bamboo and cane craft?",["Bamboo and cane","Granite","Copper wire only","Silk thread only"],0,"Artisans weave and shape prepared bamboo and cane."),
+                ("dhokra","Intermediate","Dhokra casting is associated with which process?",["Lost-wax casting","Glass blowing","Paper folding","Block printing"],0,"Dhokra is a traditional metal casting practice using lost-wax methods."),
+                ("wood-carving","Beginner","What is a key tool for wood carving?",["Carving chisel","Potter's wheel only","Loom shuttle","Kiln shelf"],0,"Carving chisels help remove wood carefully to form designs."),
+                ("stone-carving","Intermediate","What should be used when carving stone?",["Eye and dust protection","No safety equipment","Bare hands only","A paint brush only"],0,"Stone work can create flying chips and dust, so proper protective equipment is important."),
+                ("warli","Beginner","Warli art often builds figures from which shapes?",["Simple geometric shapes","Photographic gradients","Metal wires","Mosaic glass only"],0,"Warli figures commonly use circles, triangles and lines."),
+                ("terracotta","Beginner","Terracotta objects are made mainly from what?",["Clay","Wool","Bamboo leaves","Silver"],0,"Terracotta is shaped clay that is fired to harden."),
+                ("madhubani","Intermediate","Which subject often appears in Madhubani art?",["Nature and stories","Only modern cars","Only computer code","Only maps"],0,"Nature, stories, ritual themes and community life are common motifs."),
+                ("bamboo-cane","Intermediate","Why is bamboo often valued as a craft material?",["It is versatile and renewable when responsibly managed","It cannot bend","It is always metal","It needs no skill"],0,"Bamboo is versatile; responsible harvesting matters for sustainability.")
+            ]
+            for slug, diff, q, opts, ans, exp in questions:
+                db.execute("INSERT INTO quiz_questions(craft_slug,difficulty,question,options_json,answer_index,explanation) VALUES(?,?,?,?,?,?)",
+                           (slug,diff,q,json.dumps(opts),ans,exp))
+
+init_db()
+
+def current_learner():
+    name = (session.get("learner_name") or request.values.get("learner_name") or "Guest Learner").strip()
+    return name[:60] or "Guest Learner"
+
+@app.context_processor
+def inject_globals():
+    return {"learner_name": session.get("learner_name", ""), "crafts": CRAFTS}
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    if request.method == "POST":
+        name = request.form.get("learner_name", "").strip()
+        if name:
+            session["learner_name"] = name[:60]
+            flash("Welcome to your craft-learning journey!", "success")
+        return redirect(url_for("home"))
+    return render_template("index.html")
+
+@app.route("/explore")
+def explore():
+    return render_template("explore.html", crafts=CRAFTS)
+
+@app.route("/craft/<slug>")
+def craft_detail(slug):
+    craft = CRAFT_BY_SLUG.get(slug)
+    if not craft:
+        flash("We couldn't find that craft.", "error")
+        return redirect(url_for("explore"))
+    return render_template("craft_detail.html", craft=craft)
+
+@app.route("/learn", methods=["GET", "POST"])
+def learn():
+    learner = current_learner()
+    selected_slug = request.values.get("craft", "madhubani")
+    selected = CRAFT_BY_SLUG.get(selected_slug, CRAFTS[0])
+    language = request.values.get("language", "English")
+    if language not in ("English", "Hindi", "Gujarati"):
+        language = "English"
+    with get_db() as db:
+        saved = db.execute("SELECT * FROM learning_progress WHERE learner_name=? AND craft_slug=?", (learner, selected["slug"])).fetchone()
+    progress = dict(saved) if saved else {"current_step": 0, "completed": 0, "notes": "", "language": language}
+    return render_template("learn.html", selected=selected, progress=progress, language=language)
+
+@app.route("/api/ask", methods=["POST"])
+def api_ask():
+    data = request.get_json(silent=True) or {}
+    question = str(data.get("question", "")).strip()
+    slug = str(data.get("craft", "")).strip()
+    language = str(data.get("language", "English")).strip()
+    learner = current_learner()
+    if slug not in CRAFT_BY_SLUG:
+        return jsonify(error="Please select a valid craft."), 400
+    if not question or len(question) > 1500:
+        return jsonify(error="Enter a question of 1–1500 characters."), 400
+    if language not in ("English", "Hindi", "Gujarati"):
+        language = "English"
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return jsonify(error="Gemini is not configured yet. Add GEMINI_API_KEY to your .env file and restart the app."), 503
+    craft = CRAFT_BY_SLUG[slug]
+    prompt = f"""You are CraftSetu AI, a careful educator of diverse Indian traditional crafts.
+Answer the learner's question about {craft['name']} ({craft['region']}) in {language}.
+Craft context: {craft['history']} Materials: {craft['materials']} Cultural significance: {craft['significance']}.
+Give practical, respectful, beginner-friendly guidance. Clearly flag hazardous tasks (kiln firing, metal casting, stone carving, sharp tools) as tasks requiring trained adult/artisan supervision and proper protective equipment. Do not invent historical facts; note uncertainty when needed.
+Learner question: {question}"""
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), contents=prompt)
+        answer = (getattr(response, "text", None) or "").strip()
+        if not answer:
+            raise RuntimeError("The AI returned an empty response.")
+        return jsonify(answer=answer)
+
+    except Exception as exc:
+        app.logger.exception("Gemini quiz generation failed")
+        return jsonify(
+            error=f"{type(exc).__name__}: {exc}"
+        ), 502
+
+
+@app.route("/api/progress", methods=["POST"])
+def save_progress():
+    data = request.get_json(silent=True) or {}
+    learner = current_learner()
+    slug = str(data.get("craft", "")).strip()
+    language = str(data.get("language", "English")).strip()
+    try:
+        step = max(0, min(100, int(data.get("step", 0))))
+    except (ValueError, TypeError):
+        step = 0
+    completed = 1 if data.get("completed") else 0
+    notes = str(data.get("notes", ""))[:2000]
+    if slug not in CRAFT_BY_SLUG:
+        return jsonify(error="Please select a valid craft."), 400
+    if language not in ("English", "Hindi", "Gujarati"):
+        language = "English"
+    with get_db() as db:
+        db.execute("""INSERT INTO learning_progress(learner_name,craft_slug,language,current_step,completed,notes,updated_at)
+        VALUES(?,?,?,?,?,?,?) ON CONFLICT(learner_name,craft_slug) DO UPDATE SET
+        language=excluded.language,current_step=excluded.current_step,completed=excluded.completed,notes=excluded.notes,updated_at=excluded.updated_at""",
+        (learner, slug, language, step, completed, notes, datetime.now().isoformat(timespec="seconds")))
+        if completed:
+            db.execute("INSERT OR IGNORE INTO achievements(learner_name,badge_key,title,description,earned_at) VALUES(?,?,?,?,?)",
+                       (learner, "first-completion-" + slug, "Craft Explorer: " + CRAFT_BY_SLUG[slug]["name"], "Completed a craft learning path.", datetime.now().isoformat(timespec="seconds")))
+    return jsonify(ok=True, message="Progress saved.")
+
+
+@app.route("/quiz", methods=["GET", "POST"])
+def quiz():
+    # Questions are now created when the learner clicks Start Quiz.
+    # The old fixed question bank remains in the database for safety.
+    return render_template("quiz.html")
+
+
+@app.route("/api/quiz/generate", methods=["POST"])
+def generate_quiz():
+    data = request.get_json(silent=True) or {}
+    learner = current_learner()
+    craft_slug = str(data.get("craft_slug", "")).strip()
+    difficulty = str(data.get("difficulty", "")).title().strip()
+    language = str(data.get("language", "English")).strip()
+
+    if craft_slug not in CRAFT_BY_SLUG:
+        return jsonify(error="Please select a valid craft."), 400
+    if difficulty not in ("Beginner", "Intermediate", "Advanced"):
+        return jsonify(error="Please select a valid difficulty."), 400
+    if language not in ("English", "Hindi", "Gujarati"):
+        return jsonify(error="Please select a valid language."), 400
+
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return jsonify(error="Gemini API key is missing. Add GEMINI_API_KEY to your .env file and restart CraftSetu AI."), 503
+
+    craft = CRAFT_BY_SLUG[craft_slug]
+    prompt = f"""You are CraftSetu AI, an accurate teacher of Indian traditional crafts.
+Create exactly 10 multiple-choice quiz questions about {craft["name"]} from {craft["region"]}.
+Difficulty: {difficulty}. Language: {language}.
+Craft context: {craft["history"]} Materials: {craft["materials"]} Cultural significance: {craft["significance"]}.
+Rules:
+- Write every question, all four options, and explanation in {language}.
+- Each question must have exactly four distinct options.
+- Include exactly one correct option.
+- answer_index must be a zero-based integer (0, 1, 2, or 3) pointing to the correct option.
+- Make questions specific to the selected craft and chosen difficulty.
+- Avoid repeating questions or making up uncertain historical claims.
+- For safety-related crafts, include responsible safety knowledge where relevant.
+Return only valid JSON in this exact shape, with no Markdown fences or extra text:
+{{"questions":[{{"question":"Question text","options":["Option A","Option B","Option C","Option D"],"answer_index":0,"explanation":"Short explanation"}}]}}"""
+
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            contents=prompt,
+            config={"response_mime_type": "application/json"}
+        )
+        raw_text = (getattr(response, "text", None) or "").strip()
+        if not raw_text:
+            raise ValueError("Gemini returned an empty response.")
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.IGNORECASE).strip()
+        parsed = json.loads(raw_text)
+        generated = parsed.get("questions") if isinstance(parsed, dict) else None
+        if not isinstance(generated, list) or len(generated) < 10:
+            raise ValueError("Gemini did not return exactly 10 quiz questions.")
+
+        cleaned = []
+        for item in generated[:10]:
+            if not isinstance(item, dict):
+                continue
+            question_text = str(item.get("question", "")).strip()
+            options = item.get("options")
+            explanation = str(item.get("explanation", "")).strip()
+            answer_index = item.get("answer_index")
+            if (not question_text or not isinstance(options, list) or len(options) != 4
+                    or not all(isinstance(option, str) and option.strip() for option in options)
+                    or isinstance(answer_index, bool) or not isinstance(answer_index, int)
+                    or answer_index not in range(4)):
+                continue
+            cleaned.append({
+                "question": question_text[:1000],
+                "options": [option.strip()[:300] for option in options],
+                "answer_index": answer_index,
+                "explanation": explanation[:1000]
+            })
+        if len(cleaned) < 10:
+            raise ValueError(
+                f"Gemini returned only {len(cleaned)} valid questions. Exactly 10 are required."
+                )
+
+        quiz_id = uuid.uuid4().hex
+        now = datetime.now().isoformat(timespec="seconds")
+        with get_db() as db:
+            db.execute("""INSERT INTO generated_quizzes
+                (quiz_id, learner_name, craft_slug, difficulty, language, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (quiz_id, learner, craft_slug, difficulty, language, now))
+            visible_questions = []
+            for number, item in enumerate(cleaned, start=1):
+                cursor = db.execute("""INSERT INTO generated_quiz_questions
+                    (quiz_id, question_number, question, options_json, answer_index, explanation)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
+                    (quiz_id, number, item["question"], json.dumps(item["options"], ensure_ascii=False),
+                     item["answer_index"], item["explanation"]))
+                visible_questions.append({
+                    "id": cursor.lastrowid,
+                    "number": number,
+                    "question": item["question"],
+                    "options": item["options"]
+                })
+        return jsonify(quiz_id=quiz_id, craft_name=craft["name"], difficulty=difficulty,
+                       language=language, questions=visible_questions)
+    except Exception:
+        app.logger.exception("Gemini quiz generation failed")
+        return jsonify(error="Gemini could not generate the quiz right now. Check your API key, model, internet connection, and quota, then try again."), 502
+
+
+@app.route("/api/quiz/submit", methods=["POST"])
+def submit_quiz():
+    data = request.get_json(silent=True) or {}
+
+    learner = current_learner()
+    answers = data.get("answers", {})
+    craft_slug = str(data.get("craft_slug", "")).strip()
+    difficulty = str(data.get("difficulty", "")).title()
+    language = str(data.get("language", "English")).strip()
+
+    if craft_slug not in CRAFT_BY_SLUG:
+        return jsonify(error="Please select a valid craft."), 400
+
+    if difficulty not in ("Beginner", "Intermediate", "Advanced"):
+        return jsonify(error="Please select a valid difficulty."), 400
+
+    if language not in ("English", "Hindi", "Gujarati"):
+        return jsonify(error="Please select a valid language."), 400
+
+    if not isinstance(answers, dict):
+        return jsonify(error="Invalid answers submitted."), 400
+
+    with get_db() as db:
+        rows = db.execute("""
+            SELECT * FROM quiz_questions
+            WHERE craft_slug = ? AND difficulty = ?
+            ORDER BY id
+        """, (craft_slug, difficulty)).fetchall()
+
+        if not rows:
+            return jsonify(
+                error="No questions are available for this craft and difficulty yet."
+            ), 400
+
+        result = []
+        score = 0
+
+        for row in rows:
+            selected = answers.get(str(row["id"]))
+
+            valid_selection = (
+                isinstance(selected, int)
+                and not isinstance(selected, bool)
+                and 0 <= selected < len(json.loads(row["options_json"]))
+            )
+
+            correct = (
+                valid_selection
+                and selected == row["answer_index"]
+            )
+
+            score += int(correct)
+            options = json.loads(row["options_json"])
+
+            result.append({
+                "id": row["id"],
+                "question": row["question"],
+                "correct": correct,
+                "selected": selected if valid_selection else None,
+                "answer_index": row["answer_index"],
+                "answer": options[row["answer_index"]],
+                "explanation": row["explanation"]
+            })
+
+        total = len(rows)
+        percentage = round(score / total * 100, 1)
+
+        db.execute("""
+            INSERT INTO quiz_attempts
+            (learner_name, craft_slug, difficulty, score, total,
+             percentage, answers_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            learner,
+            craft_slug,
+            difficulty,
+            score,
+            total,
+            percentage,
+            json.dumps(answers),
+            datetime.now().isoformat(timespec="seconds")
+        ))
+
+        if percentage >= 70:
+            db.execute("""
+                INSERT OR IGNORE INTO achievements
+                (learner_name, badge_key, title, description, earned_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                learner,
+                "quiz-bronze",
+                "Craft Quiz Star",
+                "Scored at least 70% on a craft quiz.",
+                datetime.now().isoformat(timespec="seconds")
+            ))
+
+    return jsonify(
+        score=score,
+        total=total,
+        percentage=percentage,
+        results=result
+    )
+
+
+@app.route("/my-learning", methods=["GET", "POST"])
+def my_learning():
+    if request.method == "POST":
+        name = request.form.get("learner_name", "").strip()
+        if name:
+            session["learner_name"] = name[:60]
+            flash("Your learner profile has been updated.", "success")
+        return redirect(url_for("my_learning"))
+    learner = current_learner()
+    with get_db() as db:
+        progress_rows = db.execute("""SELECT lp.*, c.name, c.region FROM learning_progress lp JOIN crafts c ON c.slug=lp.craft_slug
+        WHERE lp.learner_name=? ORDER BY lp.updated_at DESC""", (learner,)).fetchall()
+        attempts = db.execute("SELECT * FROM quiz_attempts WHERE learner_name=? ORDER BY created_at DESC LIMIT 8", (learner,)).fetchall()
+        badges = db.execute("SELECT * FROM achievements WHERE learner_name=? ORDER BY earned_at DESC", (learner,)).fetchall()
+    return render_template("my_learning.html", learner=learner, progress_rows=progress_rows, attempts=attempts, badges=badges)
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template("error.html", code=404, message="That page could not be found."), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    app.logger.exception("Unexpected server error")
+    return render_template("error.html", code=500, message="Something went wrong. Please try again."), 500
+
+if __name__ == "__main__":
+    app.run(debug=os.getenv("FLASK_DEBUG", "true").lower() == "true")

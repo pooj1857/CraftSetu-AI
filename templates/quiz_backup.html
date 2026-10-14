@@ -1,0 +1,1051 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Craft Quiz | CraftSetu AI</title>
+
+<style>
+:root {
+    --cream: #fff9ee;
+    --coral: #e98d7b;
+    --teal: #75c8be;
+    --yellow: #eac75c;
+    --ink: #39352f;
+    --muted: #756d64;
+    --border: #eadfce;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 10% 10%, #f7d7dc, transparent 32%),
+        radial-gradient(ellipse at 90% 15%, #d7f1e8, transparent 30%),
+        radial-gradient(ellipse at 80% 90%, #fff0c3, transparent 35%),
+        var(--cream);
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 7%;
+    background: rgba(255,249,238,.92);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.logo {
+    text-decoration: none;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #bd6255;
+}
+.logo span { color: #398e83; }
+
+.nav-links {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+.nav-links a {
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: .92rem;
+}
+.nav-links a:hover, .nav-links .active { color: #bd6255; }
+
+.hero { text-align: center; padding: 48px 20px 25px; }
+
+.eyebrow {
+    display: inline-block;
+    padding: 8px 15px;
+    background: white;
+    border: 1px solid #edcf9c;
+    border-radius: 30px;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    color: #a65b4e;
+    margin-bottom: 17px;
+}
+
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin-bottom: 12px; }
+h1 span { color: #bd6255; }
+.hero p { color: var(--muted); line-height: 1.7; max-width: 620px; margin: auto; }
+
+main { width: min(850px, 92%); margin: 25px auto 65px; }
+
+.card {
+    background: rgba(255,255,255,.94);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: clamp(20px, 4vw, 35px);
+    box-shadow: 0 14px 40px rgba(91,68,44,.08);
+}
+
+.card h2 { margin-bottom: 10px; }
+.description { color: var(--muted); line-height: 1.6; margin-bottom: 25px; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 9px;
+}
+
+.field select {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fffdf9;
+    color: var(--ink);
+    font-size: 1rem;
+    outline: none;
+}
+.field select:focus { border-color: var(--teal); }
+
+.mode-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.mode-option {
+    position: relative;
+}
+.mode-option input {
+    position: absolute;
+    opacity: 0;
+}
+.mode-option label {
+    display: block;
+    text-align: center;
+    padding: 16px 8px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fffdf9;
+    cursor: pointer;
+    transition: .2s;
+}
+.mode-option label strong { display: block; margin-bottom: 5px; }
+.mode-option label small { color: var(--muted); }
+
+.mode-option input:checked + label {
+    background: #e3f5ef;
+    border: 2px solid var(--teal);
+}
+.mode-option input:focus-visible + label {
+    outline: 2px solid #398e83;
+}
+
+.btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 13px 22px;
+    font-size: .96rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: .2s;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-primary { background: #bd6255; color: white; }
+.btn-secondary { background: #e3f5ef; color: #28796e; }
+.start-row { margin-top: 26px; text-align: center; }
+
+.quiz-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 17px;
+}
+.pill {
+    display: inline-block;
+    background: #e3f5ef;
+    color: #28796e;
+    border-radius: 30px;
+    padding: 8px 13px;
+    font-size: .85rem;
+    font-weight: 700;
+}
+.progress-track {
+    height: 9px;
+    background: #f0e9de;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 28px;
+}
+.progress-bar {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--coral), var(--yellow), var(--teal));
+    transition: width .3s;
+}
+.question { font-size: clamp(1.2rem, 3vw, 1.55rem); line-height: 1.5; margin-bottom: 22px; }
+.options { display: grid; gap: 12px; }
+
+.option {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: #fffdf9;
+    color: var(--ink);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: .2s;
+}
+.option:hover:not(:disabled) { border-color: var(--teal); background: #f0faf6; }
+.option .letter {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #f7e5c8;
+    font-weight: 800;
+}
+.option.correct { background: #d9f2df; border-color: #83c99a; }
+.option.wrong { background: #ffe0dc; border-color: #e9a096; }
+.option:disabled { cursor: default; }
+
+.feedback {
+    display: none;
+    margin-top: 18px;
+    padding: 15px;
+    border-radius: 12px;
+    line-height: 1.6;
+}
+.feedback.show { display: block; }
+.feedback.good { background: #d9f2df; }
+.feedback.bad { background: #ffe0dc; }
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 25px;
+}
+
+.result { display: none; text-align: center; }
+.result.show { display: block; }
+.result-icon { font-size: 3.5rem; margin-bottom: 12px; }
+.score-circle {
+    display: grid;
+    place-items: center;
+    width: 140px;
+    height: 140px;
+    margin: 24px auto;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9dedb, #d8f2e9, #fff0bf);
+    border: 7px solid white;
+    box-shadow: 0 0 0 1px var(--border);
+    font-size: 2rem;
+    font-weight: 900;
+}
+.result p { color: var(--muted); line-height: 1.7; }
+.result-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 25px; }
+
+footer { text-align: center; padding: 25px 15px; color: var(--muted); font-size: .88rem; }
+
+.hidden { display: none !important; }
+
+@media(max-width: 600px) {
+    nav { justify-content: center; }
+    .nav-links { justify-content: center; gap: 12px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .mode-options { gap: 7px; }
+    .mode-option label { padding: 13px 5px; font-size: .9rem; }
+    .actions .btn { flex: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <a class="logo" href="/">CraftSetu <span>AI</span></a>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/crafts">Explore Crafts</a>
+        <a href="/learn">Continue Learning</a>
+        <a href="/quiz" class="active">Quiz</a>
+        <a href="/progress">My Learning</a>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="eyebrow" id="eyebrow">LEARN · PLAY · PRESERVE</div>
+    <h1 id="pageTitle">Craft Knowledge <span>Quiz</span></h1>
+    <p id="pageIntro">Choose your craft, language, and difficulty. Then test your knowledge of India's traditional crafts.</p>
+</header>
+
+<main>
+    <section class="card" id="setup">
+        <h2 id="setupTitle">Customize Your Quiz ✨</h2>
+        <p class="description" id="setupDescription">Choose your preferences before starting.</p>
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="category" id="categoryLabel">🎨 Craft Category</label>
+                <select id="category">
+                    <option value="all">All Traditional Crafts</option>
+                    <option value="madhubani">Madhubani Painting</option>
+                    <option value="bluepottery">Blue Pottery</option>
+                    <option value="bamboo">Bamboo & Cane Craft</option>
+                    <option value="warli">Warli Art</option>
+                    <option value="dhokra">Dhokra Metal Craft</option>
+                    <option value="terracotta">Terracotta Pottery</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="language" id="languageLabel">🌐 Quiz Language</label>
+                <select id="language">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="gu">ગુજરાતી (Gujarati)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field" style="margin-top:25px">
+            <label id="difficultyLabel">🏆 Difficulty Mode</label>
+            <div class="mode-options">
+                <div class="mode-option">
+                    <input type="radio" name="difficulty" id="easy" value="easy" checked>
+                    <label for="easy"><strong id="easyText">🌱 Easy</strong><small id="easyHint">Beginner</small></label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" name="difficulty" id="medium" value="medium">
+                    <label for="medium"><strong id="mediumText">🔥 Medium</strong><small id="mediumHint">Intermediate</small></label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" name="difficulty" id="hard" value="hard">
+                    <label for="hard"><strong id="hardText">💎 Hard</strong><small id="hardHint">Advanced</small></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="start-row">
+            <button class="btn btn-primary" id="startBtn" type="button">Start Quiz →</button>
+        </div>
+    </section>
+
+    <section class="card hidden" id="quizCard" aria-live="polite">
+        <div class="quiz-top">
+            <span class="pill" id="questionCount"></span>
+            <span class="pill" id="scoreLabel"></span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+        <h2 class="question" id="questionText"></h2>
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="actions">
+            <button class="btn btn-secondary" id="backBtn" type="button">← Change Settings</button>
+            <button class="btn btn-primary" id="nextBtn" type="button" disabled>Next Question →</button>
+        </div>
+    </section>
+
+    <section class="card result" id="result">
+        <div class="result-icon">🎉</div>
+        <h2 id="resultTitle">Quiz Completed!</h2>
+        <div class="score-circle" id="finalScore">0%</div>
+        <p id="resultMessage"></p>
+        <div class="result-actions">
+            <button class="btn btn-primary" id="tryAgainBtn" type="button">Try Again</button>
+            <button class="btn btn-secondary" id="newSettingsBtn" type="button">Choose Another Quiz</button>
+        </div>
+    </section>
+</main>
+
+<footer id="footerText">CraftSetu AI · Celebrating India's traditional craft heritage 🇮🇳</footer>
+
+<script>
+const translations = {
+    en: {
+        eyebrow: "LEARN · PLAY · PRESERVE",
+        title: "Craft Knowledge",
+        titleAccent: "Quiz",
+        intro: "Choose your craft, language, and difficulty. Then test your knowledge of India's traditional crafts.",
+        setup: "Customize Your Quiz ✨",
+        setupDesc: "Choose your preferences before starting.",
+        category: "🎨 Craft Category",
+        language: "🌐 Quiz Language",
+        difficulty: "🏆 Difficulty Mode",
+        easy: "🌱 Easy", easyHint: "Beginner",
+        medium: "🔥 Medium", mediumHint: "Intermediate",
+        hard: "💎 Hard", hardHint: "Advanced",
+        start: "Start Quiz →",
+        question: "Question",
+        of: "of",
+        score: "Score",
+        next: "Next Question →",
+        results: "See Results →",
+        back: "← Change Settings",
+        correct: "Correct!",
+        wrong: "Not quite. The correct answer is",
+        completed: "Quiz Completed!",
+        perfect: "Excellent! You answered every question correctly.",
+        good: "Well done! Keep learning about India's traditional crafts.",
+        tryMore: "Keep practising! Explore the crafts and try again.",
+        tryAgain: "Try Again",
+        newSettings: "Choose Another Quiz",
+        footer: "CraftSetu AI · Celebrating India's traditional craft heritage 🇮🇳",
+        all: "All Traditional Crafts",
+        noQuestions: "No questions are available for this combination yet. Please choose another category or difficulty.",
+        easyName: "Easy", mediumName: "Medium", hardName: "Hard"
+    },
+    hi: {
+        eyebrow: "सीखें · खेलें · संस्कृति बचाएं",
+        title: "शिल्प ज्ञान",
+        titleAccent: "क्विज़",
+        intro: "अपना शिल्प, भाषा और कठिनाई चुनें और भारतीय पारंपरिक शिल्प का ज्ञान परखें।",
+        setup: "अपना क्विज़ चुनें ✨",
+        setupDesc: "शुरू करने से पहले अपनी पसंद चुनें।",
+        category: "🎨 शिल्प की श्रेणी",
+        language: "🌐 क्विज़ की भाषा",
+        difficulty: "🏆 कठिनाई का स्तर",
+        easy: "🌱 आसान", easyHint: "शुरुआती",
+        medium: "🔥 मध्यम", mediumHint: "बीच का स्तर",
+        hard: "💎 कठिन", hardHint: "उन्नत",
+        start: "क्विज़ शुरू करें →",
+        question: "प्रश्न",
+        of: "में से",
+        score: "अंक",
+        next: "अगला प्रश्न →",
+        results: "परिणाम देखें →",
+        back: "← सेटिंग बदलें",
+        correct: "सही जवाब!",
+        wrong: "सही जवाब है",
+        completed: "क्विज़ पूरा हुआ!",
+        perfect: "बहुत बढ़िया! आपके सभी जवाब सही हैं।",
+        good: "शाबाश! भारतीय पारंपरिक शिल्प के बारे में सीखते रहें।",
+        tryMore: "अभ्यास जारी रखें और फिर से कोशिश करें।",
+        tryAgain: "फिर से खेलें",
+        newSettings: "दूसरा क्विज़ चुनें",
+        footer: "CraftSetu AI · भारत की पारंपरिक कला का सम्मान 🇮🇳",
+        all: "सभी पारंपरिक शिल्प",
+        noQuestions: "इस विकल्प के लिए अभी प्रश्न उपलब्ध नहीं हैं। दूसरी श्रेणी या कठिनाई चुनें।",
+        easyName: "आसान", mediumName: "मध्यम", hardName: "कठिन"
+    },
+    gu: {
+        eyebrow: "શીખો · રમો · સંસ્કૃતિ બચાવો",
+        title: "હસ્તકલા જ્ઞાન",
+        titleAccent: "ક્વિઝ",
+        intro: "તમારી હસ્તકલા, ભાષા અને મુશ્કેલીનું સ્તર પસંદ કરો અને ભારતીય પરંપરાગત હસ્તકલાનું જ્ઞાન ચકાસો.",
+        setup: "તમારી ક્વિઝ પસંદ કરો ✨",
+        setupDesc: "શરૂ કરતા પહેલાં તમારી પસંદગી કરો.",
+        category: "🎨 હસ્તકલાની શ્રેણી",
+        language: "🌐 ક્વિઝની ભાષા",
+        difficulty: "🏆 મુશ્કેલીનું સ્તર",
+        easy: "🌱 સરળ", easyHint: "શરૂઆત",
+        medium: "🔥 મધ્યમ", mediumHint: "મધ્યમ સ્તર",
+        hard: "💎 અઘરું", hardHint: "ઉચ્ચ સ્તર",
+        start: "ક્વિઝ શરૂ કરો →",
+        question: "પ્રશ્ન",
+        of: "માંથી",
+        score: "ગુણ",
+        next: "આગળનો પ્રશ્ન →",
+        results: "પરિણામ જુઓ →",
+        back: "← સેટિંગ બદલો",
+        correct: "સાચો જવાબ!",
+        wrong: "સાચો જવાબ છે",
+        completed: "ક્વિઝ પૂર્ણ થઈ!",
+        perfect: "ખૂબ સરસ! તમારા બધા જવાબ સાચા છે.",
+        good: "શાબાશ! ભારતીય પરંપરાગત હસ્તકલા વિશે શીખતા રહો.",
+        tryMore: "વધુ અભ્યાસ કરો અને ફરી પ્રયાસ કરો.",
+        tryAgain: "ફરી પ્રયાસ કરો",
+        newSettings: "બીજી ક્વિઝ પસંદ કરો",
+        footer: "CraftSetu AI · ભારતની પરંપરાગત હસ્તકલાની ઉજવણી 🇮🇳",
+        all: "બધી પરંપરાગત હસ્તકલા",
+        noQuestions: "આ પસંદગી માટે હજી પ્રશ્નો ઉપલબ્ધ નથી. બીજી શ્રેણી અથવા સ્તર પસંદ કરો.",
+        easyName: "સરળ", mediumName: "મધ્યમ", hardName: "અઘરું"
+    }
+};
+
+/*
+ * Sample question bank.
+ * Each question has English, Hindi, and Gujarati text.
+ * Questions are filtered by selected category and difficulty.
+ */
+const questionBank = [
+    {
+        category: "madhubani", difficulty: "easy",
+        q: {
+            en: "Madhubani painting is traditionally associated with which Indian state?",
+            hi: "मधुबनी चित्रकला भारत के किस राज्य से जुड़ी है?",
+            gu: "મધુબની ચિત્રકલા ભારતના કયા રાજ્ય સાથે જોડાયેલી છે?"
+        },
+        options: {
+            en: ["Bihar", "Punjab", "Kerala", "Goa"],
+            hi: ["बिहार", "पंजाब", "केरल", "गोवा"],
+            gu: ["બિહાર", "પંજાબ", "કેરળ", "ગોવા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Madhubani painting originated in the Mithila region of Bihar.",
+            hi: "मधुबनी चित्रकला बिहार के मिथिला क्षेत्र से शुरू हुई।",
+            gu: "મધુબની ચિત્રકલા બિહારના મિથિલા વિસ્તારમાંથી શરૂ થઈ હતી."
+        }
+    },
+    {
+        category: "madhubani", difficulty: "medium",
+        q: {
+            en: "Which feature is commonly seen in traditional Madhubani paintings?",
+            hi: "पारंपरिक मधुबनी चित्रों में आमतौर पर क्या दिखाई देता है?",
+            gu: "પરંપરાગત મધુબની ચિત્રોમાં સામાન્ય રીતે શું જોવા મળે છે?"
+        },
+        options: {
+            en: ["Detailed patterns and natural themes", "Only plain black squares", "Photographs", "Metal sculptures"],
+            hi: ["बारीक डिज़ाइन और प्रकृति के विषय", "केवल काले चौकोर", "फोटोग्राफ", "धातु की मूर्तियाँ"],
+            gu: ["ઝીણવટભરી ડિઝાઇન અને પ્રકૃતિના વિષયો", "માત્ર કાળા ચોરસ", "ફોટોગ્રાફ", "ધાતુની મૂર્તિઓ"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Madhubani paintings often show nature, stories, people, and detailed decorative patterns.",
+            hi: "मधुबनी चित्रों में प्रकृति, कहानियाँ, लोग और बारीक सजावटी डिज़ाइन दिखते हैं।",
+            gu: "મધુબની ચિત્રોમાં પ્રકૃતિ, વાર્તાઓ, લોકો અને ઝીણવટભરી સજાવટ જોવા મળે છે."
+        }
+    },
+    {
+        category: "madhubani", difficulty: "hard",
+        q: {
+            en: "What is an important reason for preserving Madhubani painting traditions?",
+            hi: "मधुबनी चित्रकला की परंपरा को बचाना क्यों ज़रूरी है?",
+            gu: "મધુબની ચિત્રકલાની પરંપરા જાળવવી શા માટે જરૂરી છે?"
+        },
+        options: {
+            en: ["To preserve community knowledge and cultural identity", "To replace all modern art", "To stop cultural exchange", "To remove traditional stories"],
+            hi: ["समुदाय के ज्ञान और सांस्कृतिक पहचान को बचाने के लिए", "सभी आधुनिक कला को बदलने के लिए", "सांस्कृतिक आदान-प्रदान रोकने के लिए", "पारंपरिक कहानियाँ हटाने के लिए"],
+            gu: ["સમુદાયનું જ્ઞાન અને સાંસ્કૃતિક ઓળખ જાળવવા", "તમામ આધુનિક કલાને બદલવા", "સાંસ્કૃતિક આદાનપ્રદાન રોકવા", "પરંપરાગત વાર્તાઓ દૂર કરવા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Preservation helps pass artistic skills, stories, and cultural knowledge to future generations.",
+            hi: "इससे कला, कहानियाँ और सांस्कृतिक ज्ञान अगली पीढ़ी तक पहुँचते हैं।",
+            gu: "તેનાથી કળા, વાર્તાઓ અને સાંસ્કૃતિક જ્ઞાન આવનારી પેઢી સુધી પહોંચે છે."
+        }
+    },
+    {
+        category: "bluepottery", difficulty: "easy",
+        q: {
+            en: "Blue pottery is especially associated with which Indian city?",
+            hi: "ब्लू पॉटरी किस भारतीय शहर से विशेष रूप से जुड़ी है?",
+            gu: "બ્લુ પોટરી ભારતના કયા શહેર સાથે ખાસ જોડાયેલી છે?"
+        },
+        options: {
+            en: ["Jaipur", "Mumbai", "Patna", "Kochi"],
+            hi: ["जयपुर", "मुंबई", "पटना", "कोच्चि"],
+            gu: ["જયપુર", "મુંબઈ", "પટણા", "કોચી"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Jaipur in Rajasthan is well known for its blue pottery tradition.",
+            hi: "राजस्थान का जयपुर अपनी ब्लू पॉटरी के लिए प्रसिद्ध है।",
+            gu: "રાજસ્થાનનું જયપુર તેની બ્લુ પોટરી માટે જાણીતું છે."
+        }
+    },
+    {
+        category: "bluepottery", difficulty: "medium",
+        q: {
+            en: "Which feature is most characteristic of Jaipur blue pottery?",
+            hi: "जयपुर की ब्लू पॉटरी की खास पहचान क्या है?",
+            gu: "જયપુરની બ્લુ પોટરીની ખાસ ઓળખ શું છે?"
+        },
+        options: {
+            en: ["Blue designs on glazed decorative objects", "Only unpainted wooden toys", "Woven cotton baskets", "Carved stone pillars"],
+            hi: ["चमकदार सजावटी वस्तुओं पर नीले डिज़ाइन", "बिना रंग के लकड़ी के खिलौने", "बुनी हुई सूती टोकरियाँ", "पत्थर के खंभे"],
+            gu: ["ચમકદાર સજાવટી વસ્તુઓ પર વાદળી ડિઝાઇન", "રંગ વગરનાં લાકડાનાં રમકડાં", "વણેલી કપાસની ટોપલીઓ", "પથ્થરના થાંભલા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Blue pottery is known for its distinctive blue designs and glazed decorative surfaces.",
+            hi: "ब्लू पॉटरी अपने नीले डिज़ाइन और चमकदार सजावटी सतहों के लिए जानी जाती है।",
+            gu: "બ્લુ પોટરી તેની વાદળી ડિઝાઇન અને ચમકદાર સજાવટી સપાટી માટે જાણીતી છે."
+        }
+    },
+    {
+        category: "bluepottery", difficulty: "hard",
+        q: {
+            en: "Why should blue pottery be taught through practical demonstrations as well as reading?",
+            hi: "ब्लू पॉटरी को पढ़ने के साथ करके दिखाना भी क्यों ज़रूरी है?",
+            gu: "બ્લુ પોટરી વિશે વાંચવાની સાથે પ્રાયોગિક રીતે શીખવવું શા માટે જરૂરી છે?"
+        },
+        options: {
+            en: ["To understand forming, decorating, and finishing techniques", "Because written knowledge is never useful", "To avoid learning the craft process", "To remove all design choices"],
+            hi: ["आकार देना, सजाना और अंतिम रूप देना सीखने के लिए", "क्योंकि लिखित ज्ञान कभी उपयोगी नहीं होता", "कारीगरी की प्रक्रिया से बचने के लिए", "सभी डिज़ाइन विकल्प हटाने के लिए"],
+            gu: ["આકાર આપવો, સજાવવું અને અંતિમ રૂપ આપવું સમજવા", "કારણ કે લખેલું જ્ઞાન ક્યારેય ઉપયોગી નથી", "કારીગરીની પ્રક્રિયા ટાળવા", "બધી ડિઝાઇન પસંદગીઓ દૂર કરવા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Demonstrations help learners see techniques and understand the sequence of practical steps.",
+            hi: "प्रदर्शन से विद्यार्थी तकनीक और काम के चरणों को बेहतर समझते हैं।",
+            gu: "પ્રદર્શનથી શીખનારાઓ તકનીકો અને કામના તબક્કાઓ વધુ સારી રીતે સમજી શકે છે."
+        }
+    },
+    {
+        category: "bamboo", difficulty: "easy",
+        q: {
+            en: "Which natural material is central to bamboo and cane craft?",
+            hi: "बाँस और बेंत की कारीगरी में मुख्य प्राकृतिक सामग्री क्या है?",
+            gu: "વાંસ અને વેતરની કારીગરીમાં મુખ્ય કુદરતી સામગ્રી કઈ છે?"
+        },
+        options: {
+            en: ["Bamboo", "Glass", "Concrete", "Wool"],
+            hi: ["बाँस", "काँच", "कंक्रीट", "ऊन"],
+            gu: ["વાંસ", "કાચ", "કોંક્રિટ", "ઊન"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Bamboo and cane can be shaped into baskets, furniture, and many useful objects.",
+            hi: "बाँस और बेंत से टोकरियाँ, फर्नीचर और उपयोगी वस्तुएँ बनाई जाती हैं।",
+            gu: "વાંસ અને વેતરથી ટોપલીઓ, ફર્નિચર અને ઉપયોગી વસ્તુઓ બનાવવામાં આવે છે."
+        }
+    },
+    {
+        category: "bamboo", difficulty: "medium",
+        q: {
+            en: "Which skill is important when making a strong woven bamboo basket?",
+            hi: "मज़बूत बुनी हुई बाँस की टोकरी बनाने के लिए कौन-सा कौशल ज़रूरी है?",
+            gu: "મજબૂત વણેલી વાંસની ટોપલી બનાવવા કયું કૌશલ્ય જરૂરી છે?"
+        },
+        options: {
+            en: ["Keeping the strips evenly woven", "Painting every strip with metal", "Using only stone pieces", "Avoiding any pattern"],
+            hi: ["पट्टियों को बराबर तरीके से बुनना", "हर पट्टी पर धातु रंगना", "केवल पत्थर के टुकड़े इस्तेमाल करना", "कोई पैटर्न न बनाना"],
+            gu: ["પટ્ટીઓને સરખી રીતે વણવી", "દરેક પટ્ટી પર ધાતુનો રંગ કરવો", "માત્ર પથ્થરના ટુકડા વાપરવા", "કોઈ પેટર્ન ન બનાવવો"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Even weaving and consistent tension help the basket keep its shape and strength.",
+            hi: "समान बुनाई और सही कसाव से टोकरी मज़बूत रहती है और आकार बना रहता है।",
+            gu: "સરખું વણાટ અને યોગ્ય ખેંચાણ ટોપલીને મજબૂત રાખે છે અને આકાર જાળવે છે."
+        }
+    },
+    {
+        category: "bamboo", difficulty: "hard",
+        q: {
+            en: "What should a responsible craft learner consider when sourcing bamboo?",
+            hi: "बाँस खरीदते समय एक ज़िम्मेदार कारीगर को किस बात का ध्यान रखना चाहिए?",
+            gu: "વાંસ મેળવતી વખતે જવાબદાર કારીગરે કઈ બાબત ધ્યાનમાં રાખવી જોઈએ?"
+        },
+        options: {
+            en: ["Sustainable sourcing and local community practices", "Using all available plants without limits", "Ignoring material quality", "Discarding every leftover piece"],
+            hi: ["टिकाऊ स्रोत और स्थानीय समुदाय की प्रथाएँ", "बिना सीमा सभी पौधों का उपयोग", "सामग्री की गुणवत्ता अनदेखी करना", "बचे हुए सभी टुकड़े फेंक देना"],
+            gu: ["ટકાઉ સ્ત્રોત અને સ્થાનિક સમુદાયની પદ્ધતિઓ", "મર્યાદા વગર બધા છોડ વાપરવા", "સામગ્રીની ગુણવત્તા અવગણવી", "બધા બચેલા ટુકડા ફેંકી દેવા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Responsible sourcing supports long-term availability of materials and local craft communities.",
+            hi: "ज़िम्मेदार स्रोत सामग्री की उपलब्धता और स्थानीय कारीगर समुदायों को सहारा देते हैं।",
+            gu: "જવાબદાર સ્ત્રોત સામગ્રીની લાંબા ગાળાની ઉપલબ્ધતા અને સ્થાનિક કારીગરોને ટેકો આપે છે."
+        }
+    },
+    {
+        category: "warli", difficulty: "easy",
+        q: {
+            en: "Warli art is traditionally associated with which Indian state?",
+            hi: "वारली कला भारत के किस राज्य से जुड़ी है?",
+            gu: "વારલી કલા ભારતના કયા રાજ્ય સાથે જોડાયેલી છે?"
+        },
+        options: {
+            en: ["Maharashtra", "Punjab", "Sikkim", "Goa"],
+            hi: ["महाराष्ट्र", "पंजाब", "सिक्किम", "गोवा"],
+            gu: ["મહારાષ્ટ્ર", "પંજાબ", "સિક્કિમ", "ગોવા"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Warli art is a traditional art form associated with communities in Maharashtra.",
+            hi: "वारली कला महाराष्ट्र के समुदायों से जुड़ी पारंपरिक कला है।",
+            gu: "વારલી કલા મહારાષ્ટ્રના સમુદાયો સાથે જોડાયેલી પરંપરાગત કલા છે."
+        }
+    },
+    {
+        category: "warli", difficulty: "medium",
+        q: {
+            en: "Which shapes are commonly used to represent people in Warli art?",
+            hi: "वारली कला में लोगों को दिखाने के लिए आमतौर पर कौन-सी आकृतियाँ होती हैं?",
+            gu: "વારલી કલામાં લોકોને દર્શાવવા સામાન્ય રીતે કયા આકારો વપરાય છે?"
+        },
+        options: {
+            en: ["Simple circles, triangles, and lines", "Photographic portraits", "Only squares with numbers", "Realistic metal models"],
+            hi: ["सरल वृत्त, त्रिकोण और रेखाएँ", "फोटोग्राफिक चित्र", "केवल संख्याओं वाले चौकोर", "धातु के असली मॉडल"],
+            gu: ["સરળ વર્તુળો, ત્રિકોણો અને રેખાઓ", "ફોટોગ્રાફિક ચિત્રો", "માત્ર સંખ્યાવાળા ચોરસ", "ધાતુનાં વાસ્તવિક મોડેલ"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Warli figures often use basic geometric shapes to show people, movement, and daily life.",
+            hi: "वारली चित्रों में लोगों, गतिविधियों और रोज़मर्रा के जीवन को दिखाने के लिए सरल आकृतियाँ होती हैं।",
+            gu: "વારલી ચિત્રોમાં લોકો, પ્રવૃત્તિઓ અને રોજિંદા જીવનને દર્શાવવા સરળ આકારો વપરાય છે."
+        }
+    },
+    {
+        category: "warli", difficulty: "hard",
+        q: {
+            en: "When presenting Warli art, why is cultural context important?",
+            hi: "वारली कला दिखाते समय उसकी सांस्कृतिक पृष्ठभूमि क्यों ज़रूरी है?",
+            gu: "વારલી કલા રજૂ કરતી વખતે તેનો સાંસ્કૃતિક સંદર્ભ શા માટે જરૂરી છે?"
+        },
+        options: {
+            en: ["It respects the community and helps explain the art's meaning", "It makes the original art unnecessary", "It removes the role of artists", "It means every design has the same meaning"],
+            hi: ["यह समुदाय का सम्मान करती है और कला का अर्थ समझाती है", "यह मूल कला को अनावश्यक बनाती है", "यह कलाकारों की भूमिका हटाती है", "इसका अर्थ है कि हर डिज़ाइन का एक ही अर्थ है"],
+            gu: ["તે સમુદાયનું સન્માન કરે છે અને કલાનો અર્થ સમજાવે છે", "તે મૂળ કલાને બિનજરૂરી બનાવે છે", "તે કલાકારોની ભૂમિકા દૂર કરે છે", "દરેક ડિઝાઇનનો અર્થ એકસરખો છે એવો અર્થ થાય છે"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Understanding context helps people appreciate the tradition respectfully rather than treating it as decoration alone.",
+            hi: "सांस्कृतिक संदर्भ समझने से लोग इस परंपरा का सम्मान करते हैं और इसे केवल सजावट नहीं मानते।",
+            gu: "સાંસ્કૃતિક સંદર્ભ સમજવાથી લોકો આ પરંપરાનું સન્માન કરે છે અને તેને માત્ર સજાવટ માનતા નથી."
+        }
+    },
+    {
+        category: "dhokra", difficulty: "easy",
+        q: {
+            en: "Dhokra is best known as which type of traditional craft?",
+            hi: "ढोकरा किस प्रकार की पारंपरिक कारीगरी के लिए प्रसिद्ध है?",
+            gu: "ઢોકરા કઈ પ્રકારની પરંપરાગત કારીગરી માટે જાણીતું છે?"
+        },
+        options: {
+            en: ["Metal casting", "Paper folding", "Cotton weaving", "Glass blowing"],
+            hi: ["धातु ढलाई", "कागज़ मोड़ना", "सूती बुनाई", "काँच फूँकना"],
+            gu: ["ધાતુનું ઢાળકામ", "કાગળ વાળવો", "કપાસનું વણાટ", "કાચ ફૂંકવો"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Dhokra is a traditional metal-casting craft used to make figures and decorative objects.",
+            hi: "ढोकरा धातु ढलाई की पारंपरिक कला है, जिससे मूर्तियाँ और सजावटी वस्तुएँ बनती हैं।",
+            gu: "ઢોકરા ધાતુ ઢાળવાની પરંપરાગત કળા છે, જેમાં મૂર્તિઓ અને સજાવટી વસ્તુઓ બને છે."
+        }
+    },
+    {
+        category: "dhokra", difficulty: "medium",
+        q: {
+            en: "Which technique is strongly associated with traditional Dhokra metal casting?",
+            hi: "पारंपरिक ढोकरा धातु ढलाई में कौन-सी तकनीक जुड़ी है?",
+            gu: "પરંપરાગત ઢોકરા ધાતુ ઢાળકામ સાથે કઈ તકનીક જોડાયેલી છે?"
+        },
+        options: {
+            en: ["Lost-wax casting", "Machine knitting", "Glass etching", "Paper marbling"],
+            hi: ["लॉस्ट-वैक्स ढलाई", "मशीन से बुनाई", "काँच पर नक्काशी", "कागज़ पर रंग फैलाना"],
+            gu: ["લોસ્ટ-વેક્સ ઢાળકામ", "મશીનથી વણાટ", "કાચ પર કોતરકામ", "કાગળ પર રંગ ફેલાવવો"]
+        },
+        answer: 0,
+        explanation: {
+            en: "The lost-wax method is widely associated with Dhokra metal-casting traditions.",
+            hi: "लॉस्ट-वैक्स विधि ढोकरा धातु ढलाई की परंपरा से जुड़ी है।",
+            gu: "લોસ્ટ-વેક્સ પદ્ધતિ ઢોકરા ધાતુ ઢાળકામની પરંપરા સાથે જોડાયેલી છે."
+        }
+    },
+    {
+        category: "dhokra", difficulty: "hard",
+        q: {
+            en: "Why is documenting Dhokra makers' techniques valuable?",
+            hi: "ढोकरा कारीगरों की तकनीकों का दस्तावेज़ बनाना क्यों उपयोगी है?",
+            gu: "ઢોકરા કારીગરોની તકનીકોનું દસ્તાવેજીકરણ શા માટે ઉપયોગી છે?"
+        },
+        options: {
+            en: ["It helps transmit specialist knowledge to future learners", "It removes the need for craftspeople", "It makes every object identical", "It stops people learning by practice"],
+            hi: ["इससे विशेष ज्ञान अगली पीढ़ी तक पहुँचता है", "इससे कारीगरों की ज़रूरत खत्म होती है", "इससे हर वस्तु एक जैसी बनती है", "इससे अभ्यास से सीखना बंद होता है"],
+            gu: ["તે વિશિષ્ટ જ્ઞાન આવનારા શીખનારાઓ સુધી પહોંચાડે છે", "તે કારીગરોની જરૂરિયાત દૂર કરે છે", "તે દરેક વસ્તુ એકસરખી બનાવે છે", "તે પ્રેક્ટિસથી શીખવાનું બંધ કરે છે"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Documentation can help preserve specialist techniques while recognizing the craftspeople who hold that knowledge.",
+            hi: "दस्तावेज़ीकरण विशेष तकनीकों को बचाने और उन कारीगरों को पहचान देने में मदद करता है जिनके पास यह ज्ञान है।",
+            gu: "દસ્તાવેજીકરણ વિશિષ્ટ તકનીકો જાળવવામાં અને આ જ્ઞાન ધરાવતા કારીગરોને માન્યતા આપવામાં મદદ કરે છે."
+        }
+    },
+    {
+        category: "terracotta", difficulty: "easy",
+        q: {
+            en: "What is terracotta mainly made from?",
+            hi: "टेराकोटा मुख्य रूप से किससे बनता है?",
+            gu: "ટેરાકોટા મુખ્યત્વે શેમાંથી બને છે?"
+        },
+        options: {
+            en: ["Clay", "Plastic", "Wool", "Glass"],
+            hi: ["मिट्टी", "प्लास्टिक", "ऊन", "काँच"],
+            gu: ["માટી", "પ્લાસ્ટિક", "ઊન", "કાચ"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Terracotta objects are made from clay that is shaped and fired.",
+            hi: "टेराकोटा की वस्तुएँ मिट्टी को आकार देकर पकाने से बनती हैं।",
+            gu: "ટેરાકોટાની વસ્તુઓ માટીને આકાર આપીને પકવવાથી બને છે."
+        }
+    },
+    {
+        category: "terracotta", difficulty: "medium",
+        q: {
+            en: "What is a key step in making a terracotta object?",
+            hi: "टेराकोटा की वस्तु बनाने का एक मुख्य चरण क्या है?",
+            gu: "ટેરાકોટાની વસ્તુ બનાવવાનું એક મુખ્ય પગલું કયું છે?"
+        },
+        options: {
+            en: ["Shaping the clay and firing it", "Freezing the clay", "Weaving the clay", "Melting glass into it"],
+            hi: ["मिट्टी को आकार देकर पकाना", "मिट्टी को जमाना", "मिट्टी को बुनना", "उसमें काँच पिघलाना"],
+            gu: ["માટીને આકાર આપીને પકવવી", "માટીને થીજવવી", "માટીને વણવી", "તેમાં કાચ ઓગાળવો"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Shaping and firing help turn clay into a more durable terracotta object.",
+            hi: "आकार देना और पकाना मिट्टी को अधिक टिकाऊ टेराकोटा वस्तु बनाते हैं।",
+            gu: "આકાર આપવો અને પકવવું માટીને વધુ ટકાઉ ટેરાકોટાની વસ્તુમાં ફેરવે છે."
+        }
+    },
+    {
+        category: "terracotta", difficulty: "hard",
+        q: {
+            en: "Why can firing conditions affect the final terracotta object?",
+            hi: "पकाने की परिस्थितियाँ टेराकोटा की अंतिम वस्तु को क्यों प्रभावित करती हैं?",
+            gu: "પકવવાની પરિસ્થિતિઓ ટેરાકોટાની અંતિમ વસ્તુને શા માટે અસર કરે છે?"
+        },
+        options: {
+            en: ["They can affect strength, colour, and durability", "They determine the object's language", "They remove the need for clay", "They make shaping impossible"],
+            hi: ["वे मज़बूती, रंग और टिकाऊपन को प्रभावित करती हैं", "वे वस्तु की भाषा तय करती हैं", "वे मिट्टी की ज़रूरत खत्म करती हैं", "वे आकार देना असंभव बनाती हैं"],
+            gu: ["તે મજબૂતી, રંગ અને ટકાઉપણાને અસર કરી શકે છે", "તે વસ્તુની ભાષા નક્કી કરે છે", "તે માટીની જરૂરિયાત દૂર કરે છે", "તે આકાર આપવો અશક્ય બનાવે છે"]
+        },
+        answer: 0,
+        explanation: {
+            en: "Firing temperature and conditions influence the properties and appearance of fired clay.",
+            hi: "पकाने का तापमान और परिस्थितियाँ पकी मिट्टी की विशेषताओं और रंग को प्रभावित करती हैं।",
+            gu: "પકવવાનું તાપમાન અને પરિસ્થિતિઓ પકવેલી માટીના ગુણધર્મો અને દેખાવને અસર કરે છે."
+        }
+    }
+];
+
+const categoryNames = {
+    all: { en: "All Traditional Crafts", hi: "सभी पारंपरिक शिल्प", gu: "બધી પરંપરાગત હસ્તકલા" },
+    madhubani: { en: "Madhubani Painting", hi: "मधुबनी चित्रकला", gu: "મધુબની ચિત્રકલા" },
+    bluepottery: { en: "Blue Pottery", hi: "ब्लू पॉटरी", gu: "બ્લુ પોટરી" },
+    bamboo: { en: "Bamboo & Cane Craft", hi: "बाँस और बेंत की कारीगरी", gu: "વાંસ અને વેતરની હસ્તકલા" },
+    warli: { en: "Warli Art", hi: "वारली कला", gu: "વારલી કલા" },
+    dhokra: { en: "Dhokra Metal Craft", hi: "ढोकरा धातु कला", gu: "ઢોકરા ધાતુ હસ્તકલા" },
+    terracotta: { en: "Terracotta Pottery", hi: "टेराकोटा मिट्टी कला", gu: "ટેરાકોટા માટીકામ" }
+};
+
+let currentQuestions = [];
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+let currentLanguage = "en";
+
+const $ = id => document.getElementById(id);
+
+function getDifficulty() {
+    return document.querySelector('input[name="difficulty"]:checked').value;
+}
+
+function applyLanguage() {
+    const t = translations[$("language").value];
+    currentLanguage = $("language").value;
+
+    document.documentElement.lang = currentLanguage;
+    $("eyebrow").textContent = t.eyebrow;
+    $("pageTitle").innerHTML = `${t.title} <span>${t.titleAccent}</span>`;
+    $("pageIntro").textContent = t.intro;
+    $("setupTitle").textContent = t.setup;
+    $("setupDescription").textContent = t.setupDesc;
+    $("categoryLabel").textContent = t.category;
+    $("languageLabel").textContent = t.language;
+    $("difficultyLabel").textContent = t.difficulty;
+    $("easyText").textContent = t.easy;
+    $("easyHint").textContent = t.easyHint;
+    $("mediumText").textContent = t.medium;
+    $("mediumHint").textContent = t.mediumHint;
+    $("hardText").textContent = t.hard;
+    $("hardHint").textContent = t.hardHint;
+    $("startBtn").textContent = t.start;
+    $("backBtn").textContent = t.back;
+    $("nextBtn").textContent = t.next;
+    $("resultTitle").textContent = t.completed;
+    $("tryAgainBtn").textContent = t.tryAgain;
+    $("newSettingsBtn").textContent = t.newSettings;
+    $("footerText").textContent = t.footer;
+
+    $("category").options[0].textContent = t.all;
+}
+
+
+function startQuiz() {
+    const category = $("category").value;
+    const difficulty = getDifficulty();
+    const t = translations[currentLanguage];
+
+    // Filter questions by the selected category and difficulty.
+    const availableQuestions = questionBank.filter(q =>
+        (category === "all" || q.category === category) &&
+        q.difficulty === difficulty
+    );
+
+    // Check whether enough questions exist.
+    if (availableQuestions.length < 10) {
+        alert(
+            `Only ${availableQuestions.length} questions are available ` +
+            `for this selection. Please add more questions or choose ` +
+            `another category or difficulty.`
+        );
+        return;
+    }
+
+    // Shuffle questions randomly.
+    const shuffledQuestions = [...availableQuestions];
+
+    for (let i = shuffledQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledQuestions[i], shuffledQuestions[j]] =
+            [shuffledQuestions[j], shuffledQuestions[i]];
+    }
+
+    // Select exactly 10 questions.
+    currentQuestions = shuffledQuestions.slice(0, 10);
+
+    currentIndex = 0;
+    score = 0;
+
+    $("setup").classList.add("hidden");
+    $("result").classList.remove("show");
+    $("quizCard").classList.remove("hidden");
+
+    renderQuestion();
+}
+
+function renderQuestion() {
+    answered = false;
+    const q = currentQuestions[currentIndex];
+    const t = translations[currentLanguage];
+
+    $("questionCount").textContent =
+        `${t.question} ${currentIndex + 1} ${t.of} ${currentQuestions.length}`;
+    $("scoreLabel").textContent = `${t.score}: ${score}`;
+    $("progressBar").style.width =
+        `${(currentIndex / currentQuestions.length) * 100}%`;
+
+    $("questionText").textContent = q.q[currentLanguage];
+    $("options").innerHTML = "";
+    $("feedback").className = "feedback";
+    $("feedback").textContent = "";
+    $("nextBtn").disabled = true;
+    $("nextBtn").textContent =
+        currentIndex === currentQuestions.length - 1 ? t.results : t.next;
+
+    q.options[currentLanguage].forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "option";
+
+        const letter = document.createElement("span");
+        letter.className = "letter";
+        letter.textContent = String.fromCharCode(65 + index);
+
+        const label = document.createElement("span");
+        label.textContent = option;
+
+        button.append(letter, label);
+        button.addEventListener("click", () => selectAnswer(index, button));
+        $("options").appendChild(button);
+    });
+}
+
+function selectAnswer(selectedIndex, selectedButton) {
+    if (answered) return;
+    answered = true;
+
+    const q = currentQuestions[currentIndex];
+    const t = translations[currentLanguage];
+    const correct = selectedIndex === q.answer;
+    const buttons = $("options").querySelectorAll(".option");
+
+    buttons.forEach((button, index) => {
+        button.disabled = true;
+        if (index === q.answer) button.classList.add("correct");
+    });
+
+    if (correct) {
+        score++;
+        selectedButton.classList.add("correct");
+        $("feedback").className = "feedback show good";
+        $("feedback").textContent = `${t.correct} ${q.explanation[currentLanguage]}`;
+    } else {
+        selectedButton.classList.add("wrong");
+        $("feedback").className = "feedback show bad";
+        $("feedback").textContent =
+            `${t.wrong}: "${q.options[currentLanguage][q.answer]}". ${q.explanation[currentLanguage]}`;
+    }
+
+    $("scoreLabel").textContent = `${t.score}: ${score}`;
+    $("nextBtn").disabled = false;
+}
+
+function showResults() {
+    const t = translations[currentLanguage];
+    const percentage = Math.round(score / currentQuestions.length * 100);
+
+    $("quizCard").classList.add("hidden");
+    $("result").classList.add("show");
+    $("finalScore").textContent = `${percentage}%`;
+    $("progressBar").style.width = "100%";
+
+    let message;
+    if (percentage === 100) {
+        message = t.perfect;
+    } else if (percentage >= 60) {
+        message = `${score}/${currentQuestions.length}. ${t.good}`;
+    } else {
+        message = `${score}/${currentQuestions.length}. ${t.tryMore}`;
+    }
+
+    $("resultMessage").textContent = message;
+}
+
+function resetToSettings() {
+    $("quizCard").classList.add("hidden");
+    $("result").classList.remove("show");
+    $("setup").classList.remove("hidden");
+}
+
+$("language").addEventListener("change", applyLanguage);
+$("startBtn").addEventListener("click", startQuiz);
+$("backBtn").addEventListener("click", resetToSettings);
+$("newSettingsBtn").addEventListener("click", resetToSettings);
+$("tryAgainBtn").addEventListener("click", startQuiz);
+
+$("nextBtn").addEventListener("click", () => {
+    if (!answered) return;
+
+    if (currentIndex < currentQuestions.length - 1) {
+        currentIndex++;
+        renderQuestion();
+    } else {
+        showResults();
+    }
+});
+
+applyLanguage();
+</script>
+
+</body>
+</html>

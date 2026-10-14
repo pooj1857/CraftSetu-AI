@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}CraftSetu AI — Keep Traditions Alive{% endblock %}
+{% block content %}
+<section class="hero section-shell">
+  <div class="hero-copy">
+    <span class="eyebrow"><span class="eyebrow-dot"></span> A bridge between generations</span>
+    <h1>Old-world art.<br><em>New ways to learn.</em></h1>
+    <p class="hero-lead">Discover India's living craft traditions and learn them step by step with a little help from AI.</p>
+    <div class="hero-actions"><a class="btn btn-primary" href="{{ url_for('explore') }}">Explore the crafts <span>↗</span></a><a class="btn btn-outline" href="{{ url_for('learn') }}">Continue learning</a></div>
+    <div class="hero-proof"><span class="proof-icon">✦</span><span><b>Rooted in heritage</b><small>Curious by nature. Respectful by design.</small></span></div>
+  </div>
+  <div class="hero-art" aria-label="Decorative folk art inspired shapes">
+    <div class="sunburst"></div><div class="art-circle art-coral"></div><div class="art-circle art-teal"></div><div class="art-circle art-yellow"></div>
+    <div class="art-card art-card-top"><span class="mini-motif">✿</span><div><b>Made by hand</b><small>Stories in every detail</small></div></div>
+    <div class="folk-pot"><div class="pot-neck"></div><div class="pot-body"><span>✿</span><i>〰</i><span>✿</span></div><div class="pot-base"></div></div>
+    <div class="art-card art-card-bottom"><span class="mini-motif teal">✳</span><div><b>Learn at your pace</b><small>One craft at a time</small></div></div>
+    <div class="art-leaf leaf-one">❧</div><div class="art-leaf leaf-two">❧</div>
+  </div>
+</section>
+<section class="stats-ribbon section-shell"><div><strong>8</strong><span>craft traditions to explore</span></div><div><strong>3</strong><span>learning languages</span></div><div><strong>∞</strong><span>stories worth preserving</span></div></section>
+<section class="why-section section-shell">
+  <div class="centered-heading"><span class="eyebrow">THE HEART OF CRAFTSETU</span><h2>Why CraftSetu?</h2><p>Traditional knowledge should travel forward—not get left behind.</p></div>
+  <div class="why-grid">
+    <article class="why-card"><span class="why-icon coral-bg">✿</span><h3>Discover the roots</h3><p>Explore the regions, stories, materials and meaning behind India's diverse crafts.</p></article>
+    <article class="why-card featured"><span class="why-icon mint-bg">✦</span><h3>Learn with guidance</h3><p>Get a learning path and ask AI questions in English, Hindi or Gujarati.</p></article>
+    <article class="why-card"><span class="why-icon yellow-bg">❋</span><h3>Keep your progress</h3><p>Save your learning, try a quiz and celebrate every new skill you discover.</p></article>
+  </div>
+</section>
+<section class="discover-band section-shell"><div><span class="eyebrow">YOUR NEXT STORY STARTS HERE</span><h2>Every craft has a story.<br>Come learn yours.</h2></div><a class="btn btn-dark" href="{{ url_for('explore') }}">Find a craft <span>↗</span></a><div class="band-flower">✿</div></section>
+<section class="name-section section-shell"><div><span class="eyebrow">MAKE IT YOURS</span><h2>A little space for your learning journey</h2><p>Set a learner name to keep your progress and quiz history together on this device.</p></div><form method="post" class="name-form"><label for="learner_name">Your learner name</label><div class="input-row"><input id="learner_name" name="learner_name" maxlength="60" placeholder="e.g. Pooja" required><button class="btn btn-primary" type="submit">Save name</button></div></form></section>
+{% endblock %}

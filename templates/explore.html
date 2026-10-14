@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Explore Traditional Crafts · CraftSetu AI{% endblock %}
+{% block content %}
+<section class="page-hero section-shell"><span class="eyebrow">A LIVING HERITAGE</span><h1>Meet the crafts of India.</h1><p>From painted stories to carved stone, each tradition holds a world of knowledge.</p>
+<div class="search-wrap"><span>⌕</span><input id="craft-search" type="search" placeholder="Search crafts, regions or materials…" aria-label="Search crafts"></div></section>
+<section class="craft-grid section-shell" id="craft-grid">
+{% for craft in crafts %}
+<article class="craft-card" data-search="{{ (craft.name ~ ' ' ~ craft.region ~ ' ' ~ craft.category ~ ' ' ~ craft.materials)|lower }}">
+  <div class="craft-illustration illustration-{{ loop.index }}"><span class="illustration-symbol">{% if loop.index == 1 %}✿{% elif loop.index == 2 %}◉{% elif loop.index == 3 %}⌘{% elif loop.index == 4 %}✺{% elif loop.index == 5 %}❧{% elif loop.index == 6 %}✥{% elif loop.index == 7 %}✳{% else %}◌{% endif %}</span><span class="illustration-label">{{ craft.category }}</span></div>
+  <div class="craft-card-body"><div class="craft-meta"><span>{{ craft.region }}</span><span class="level-pill">{{ craft.level }}</span></div><h2>{{ craft.name }}</h2><p>{{ craft.history }}</p><div class="craft-card-actions"><a class="text-link" href="{{ url_for('craft_detail', slug=craft.slug) }}">Discover craft <span>→</span></a><a class="small-round" href="{{ url_for('learn', craft=craft.slug) }}" aria-label="Start learning {{ craft.name }}">↗</a></div></div>
+</article>
+{% endfor %}
+<p class="empty-search hidden" id="empty-search">No crafts match that search. Try another word.</p>
+</section>
+{% endblock %}
